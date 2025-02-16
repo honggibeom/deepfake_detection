@@ -1,100 +1,279 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import styled from "styled-components";
-
+import { BiImageAdd } from "react-icons/bi";
+import PieChart from "./components/PieChart";
+import { IoMdHome } from "react-icons/io";
+import loading from "./asset/loading.svg";
 const AppCss = styled.div`
   width: 100vw;
-  background: #00000055;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  padding: 40px 0;
-  canvas {
-    display: block;
-    width: 60vw;
-    height: 60vh;
+  header {
+    padding: 20px 40px;
+    box-sizing: border-box;
+    width: 100vw;
+    min-height: 60px;
+    background-color: #ffffff;
+    position: fixed;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
   }
-  .start {
+  .main {
+    overflow: auto;
+    background: #f5f5f5;
+    min-height: 100vh;
+    padding: 20px 20vw;
+  }
+  #file {
+    display: none;
+  }
+  #label1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 180px 0;
     background: #ffffff;
-    width: 10vw;
-    text-align: center;
-    height: 30px;
-    margin: 20px 0;
+    border: 1px dashed #000000;
+    border-radius: 12px;
+    margin: 20vh 0;
+    box-sizing: border-box;
     cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    .imgAdd {
+      font-size: 50px;
+      color: #00000088;
+    }
+    .inputContainer {
+      text-align: center;
+    }
+    .addText {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+  }
+  .video {
+    width: 100%;
+    border-radius: 12px;
+    margin: 50px 0;
+    box-sizing: border-box;
+  }
+  .resultContainer {
+    width: 100%;
+    margin: 50px 0 100px 0;
+    padding: 50px 100px;
+    background: #ffffff;
+    box-sizing: border-box;
+    border-radius: 12px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    text-align: center;
+    .chart {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .time {
+        color: #000000;
+        font-size: 20px;
+        margin-right: 100px;
+      }
+    }
+    .result {
+      color: #000000;
+      font-size: 22px;
+      margin-top: 50px;
+      font-weight: 500;
+    }
+  }
+  .reset {
+    display: flex;
+    padding: 30px 0;
+    margin: 0;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+    text-align: center;
+    font-size: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    .home {
+      color: #2e96ff;
+    }
+  }
+
+  .reset:hover {
+    background: #2e96ff;
+    .home {
+      color: #ffffff;
+    }
+  }
+
+  #canvas1,
+  #canvas2 {
+    display: none;
+    background: #ffffff;
   }
 `;
 
 function App() {
-  const [link, setLink] = useState<string>(
-    "https://www.shutterstock.com/shutterstock/videos/3552321153/preview/stock-footage-online-services-visualization-in-a-diverse-modern-office-environment-top-down-view-on-a-futuristic.webm"
-  );
+  const [link, setLink] = useState<string>("#");
+  const [loadingTime, setLoadingTime] = useState<number>(-1);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const canvas1 = useRef<HTMLCanvasElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  async function init() {
-    if (canvas.current === null) return;
-    const context = canvas.current.getContext("2d") as CanvasRenderingContext2D;
-    const res = await axios.get(link, { responseType: "blob" });
-    const blob = new Blob([res.data]);
-    const reader = new FileReader();
-    const w = (video.current as HTMLVideoElement).videoWidth;
-    const h = (video.current as HTMLVideoElement).videoHeight;
-    const imgArray = new Array(h);
-    for (let i = 0; i < h; i++) {
-      imgArray[i] = new Array(w);
-    }
-    reader.onload = () => {
-      const data = reader.result as ArrayBuffer;
-      if (data == null) return;
-      let arr = new Int8Array(data);
-      const tmp = JSON.stringify(arr, null, "  ");
+  function timeoutTimer(endTime: Date, timeout: number, duration: number) {
+    if (link === "#") return;
+    const now = Date.now();
+    const end = endTime.getTime();
+    const timeLeft = end - now;
 
-      const paper = context.createImageData(h, w);
-      for (let i = 0; i < h; i++) {
-        for (let j = 0; j < w; j++) {
-          let s = i * h + j;
-          imgArray[i][j] = tmp[s];
-          paper.data[s * 4] = imgArray[i][j].charCodeAt(0);
-          paper.data[s * 4 + 1] = imgArray[i][j].charCodeAt(0);
-          paper.data[s * 4 + 2] = imgArray[i][j].charCodeAt(0);
-          paper.data[s * 4 + 3] = 255;
-        }
-      }
-      context.putImageData(paper, 0, 0);
-    };
-    reader.readAsArrayBuffer(blob);
+    if (timeLeft <= 0) {
+      setLoadingTime(duration);
+      return;
+    }
+    setTimeout(() => {
+      timeoutTimer(endTime, timeout, duration);
+    }, timeout);
+  }
+  useEffect(() => {
+    if (link === "#") return;
+    doLoad();
+  }, [link]);
+
+  function timerCallback(
+    videoElement: HTMLVideoElement,
+    context: CanvasRenderingContext2D,
+    context1: CanvasRenderingContext2D
+  ) {
+    if (videoElement.paused || videoElement.ended || link === "#") {
+      return;
+    }
+    computeFrame(videoElement, context, context1);
+    setTimeout(function () {
+      timerCallback(videoElement, context, context1);
+    }, 0);
   }
 
-  async function init1() {
-    if (canvas.current === null) return;
-    const context = canvas.current.getContext("2d") as CanvasRenderingContext2D;
-    //const res = await axios.get(link, { responseType: "blob" });
-    const w = (video.current as HTMLVideoElement).videoWidth;
-    const h = (video.current as HTMLVideoElement).videoHeight;
-    context.drawImage(video.current as HTMLVideoElement, 0, 0, w, h);
-    const frame = context.getImageData(0, 0, 10, 10);
-    let len = frame.data.length / 4;
-    for (let i = 0; i < len; i++) {
+  function doLoad() {
+    const videoElement = video.current as HTMLVideoElement;
+    const context = (canvas.current as HTMLCanvasElement).getContext(
+      "2d"
+    ) as CanvasRenderingContext2D;
+    const context1 = (canvas1.current as HTMLCanvasElement).getContext(
+      "2d"
+    ) as CanvasRenderingContext2D;
+    videoElement.onplay = () => {
+      timeoutTimer(
+        new Date(Date.now() + videoElement.duration * 1000),
+        1000,
+        videoElement.duration
+      );
+      (canvas.current as HTMLCanvasElement).width = (
+        canvas1.current as HTMLCanvasElement
+      ).width = videoElement.videoWidth;
+      (canvas.current as HTMLCanvasElement).height = (
+        canvas1.current as HTMLCanvasElement
+      ).height = videoElement.videoHeight;
+      timerCallback(videoElement, context, context1);
+    };
+  }
+
+  function computeFrame(
+    videoElement: HTMLVideoElement,
+    context: CanvasRenderingContext2D,
+    context1: CanvasRenderingContext2D
+  ) {
+    context.drawImage(
+      videoElement,
+      0,
+      0,
+      videoElement.videoWidth,
+      videoElement.videoHeight
+    );
+    let frame = context.getImageData(
+      0,
+      0,
+      videoElement.videoWidth,
+      videoElement.videoHeight
+    );
+    let l = frame.data.length / 4;
+    for (let i = 0; i < l; i++) {
       let r = frame.data[i * 4];
       let g = frame.data[i * 4 + 1];
       let b = frame.data[i * 4 + 2];
-      if (g > 100 && r > 100 && b < 43) frame.data[i * 4 + 3] = 0;
+      //let alpha = frame.data[i * 4 + 3];
+      if (r > 100 && g > 100 && b > 100)
+        frame.data[i * 4] = frame.data[i * 4 + 1] = frame.data[i * 4 + 2] = 0;
     }
+    context1.putImageData(frame, 0, 0);
+    return;
   }
 
   return (
     <AppCss>
-      <video controls width="1000" autoPlay loop ref={video} preload={"auto"}>
-        <source src={link} />
-      </video>
-      <div
-        className="start"
+      <header> deepfake_detection</header>
+      <div className="main">
+        {link === "#" ? (
+          <>
+            <input
+              type="file"
+              id="file"
+              accept="audio/*,video/*"
+              onChange={(e) => {
+                const file = (e.target.files as FileList)[0];
+                setLink(URL.createObjectURL(file));
+              }}
+            />
+            <label htmlFor="file" id="label1">
+              <div className="inputContainer">
+                <BiImageAdd className="imgAdd" />
+                <p className="addText">사진 혹은 비디오 추가</p>
+              </div>
+            </label>
+          </>
+        ) : (
+          <>
+            <video
+              controls
+              width="1000"
+              className="video"
+              autoPlay
+              loop
+              ref={video}
+              preload={"auto"}
+              src={link}
+            ></video>
+
+            <div className="resultContainer">
+              {loadingTime > 0 ? (
+                <>
+                  <div className="chart">
+                    <div>
+                      <PieChart accuracy={50} />
+                    </div>
+                    <p className="time">8초 소요됨</p>
+                  </div>
+                  <p className="result">
+                    해당 영상은 50%확률로 딥페이크 입니다.
+                  </p>
+                </>
+              ) : (
+                <img src={loading} />
+              )}
+            </div>
+          </>
+        )}
+
+        <canvas ref={canvas} id="canvas1"></canvas>
+        <canvas ref={canvas1} id="canvas2"></canvas>
+      </div>
+      <p
+        className="reset"
         onClick={() => {
-          init1();
+          window.location.reload();
         }}
       >
-        실행
-      </div>
-      <canvas ref={canvas}></canvas>
+        <IoMdHome className="home" />
+      </p>
     </AppCss>
   );
 }
