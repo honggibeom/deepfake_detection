@@ -13,6 +13,19 @@ const DetectionCss = styled.div`
     min-height: 100vh;
     padding: 20px 20vw;
   }
+  .container {
+    margin-top: 18vh;
+    margin-bottom: 5vh;
+    .title {
+      text-align: center;
+      font-size: 40px;
+      font-weight: 600;
+    }
+    .explain {
+      font-size: 18px;
+      text-align: center;
+    }
+  }
   #file {
     display: none;
   }
@@ -25,7 +38,6 @@ const DetectionCss = styled.div`
     background: #ffffff;
     border: 1px dashed #000000;
     border-radius: 12px;
-    margin: 20vh 0;
     box-sizing: border-box;
     cursor: pointer;
     box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
@@ -75,7 +87,6 @@ const DetectionCss = styled.div`
     }
   }
 
-
   #canvas1,
   #canvas2 {
     display: none;
@@ -84,102 +95,26 @@ const DetectionCss = styled.div`
 `;
 
 function Detection() {
+  type resultType = { data: boolean[]; fake: number; real: number };
   const [link, setLink] = useState<string>("#");
   const [loadingTime, setLoadingTime] = useState<number>(-1);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const canvas1 = useRef<HTMLCanvasElement>(null);
+  const [result, setResult] = useState<resultType>({
+    data: [],
+    real: 0,
+    fake: 0,
+  });
+  const [ratio, setRatio] = useState<number>(0);
   const video = useRef<HTMLVideoElement>(null);
-  function timeoutTimer(endTime: Date, timeout: number, duration: number) {
-    if (link === "#") return;
-    const now = Date.now();
-    const end = endTime.getTime();
-    const timeLeft = end - now;
-
-    if (timeLeft <= 0) {
-      setLoadingTime(duration);
-      return;
-    }
-    setTimeout(() => {
-      timeoutTimer(endTime, timeout, duration);
-    }, timeout);
-  }
-  useEffect(() => {
-    if (link === "#") return;
-    doLoad();
-  }, [link]);
-
-  function timerCallback(
-    videoElement: HTMLVideoElement,
-    context: CanvasRenderingContext2D,
-    context1: CanvasRenderingContext2D
-  ) {
-    if (videoElement.paused || videoElement.ended || link === "#") {
-      return;
-    }
-    computeFrame(videoElement, context, context1);
-    setTimeout(function () {
-      timerCallback(videoElement, context, context1);
-    }, 0);
-  }
-
-  function doLoad() {
-    const videoElement = video.current as HTMLVideoElement;
-    const context = (canvas.current as HTMLCanvasElement).getContext(
-      "2d"
-    ) as CanvasRenderingContext2D;
-    const context1 = (canvas1.current as HTMLCanvasElement).getContext(
-      "2d"
-    ) as CanvasRenderingContext2D;
-    videoElement.onplay = () => {
-      timeoutTimer(
-        new Date(Date.now() + videoElement.duration * 1000),
-        1000,
-        videoElement.duration
-      );
-      (canvas.current as HTMLCanvasElement).width = (
-        canvas1.current as HTMLCanvasElement
-      ).width = videoElement.videoWidth;
-      (canvas.current as HTMLCanvasElement).height = (
-        canvas1.current as HTMLCanvasElement
-      ).height = videoElement.videoHeight;
-      timerCallback(videoElement, context, context1);
-    };
-  }
-
-  function computeFrame(
-    videoElement: HTMLVideoElement,
-    context: CanvasRenderingContext2D,
-    context1: CanvasRenderingContext2D
-  ) {
-    context.drawImage(
-      videoElement,
-      0,
-      0,
-      videoElement.videoWidth,
-      videoElement.videoHeight
-    );
-    let frame = context.getImageData(
-      0,
-      0,
-      videoElement.videoWidth,
-      videoElement.videoHeight
-    );
-    let l = frame.data.length / 4;
-    for (let i = 0; i < l; i++) {
-      let r = frame.data[i * 4];
-      let g = frame.data[i * 4 + 1];
-      let b = frame.data[i * 4 + 2];
-      //let alpha = frame.data[i * 4 + 3];
-      if (r > 100 && g > 100 && b > 100)
-        frame.data[i * 4] = frame.data[i * 4 + 1] = frame.data[i * 4 + 2] = 0;
-    }
-    context1.putImageData(frame, 0, 0);
-    return;
-  }
-
+  const [videoFrameState, setVideoFrameState] = useState<boolean>(true);
   return (
     <DetectionCss>
       <div className="main">
+        <div className="container">
+          <p className="title">딥페이크 영상 탐지</p>
+          <p className="explain">
+            x-exception 방식을 통해 영상의 딥페이크 여부를 구분합니다.
+          </p>
+        </div>
         {link === "#" ? (
           <>
             <input
@@ -190,6 +125,7 @@ function Detection() {
                 const file = (e.target.files as FileList)[0];
                 const formData = new FormData();
                 formData.append("file", file);
+                const start = new Date().getTime();
                 axios
                   .post("http://localhost:5000/identification", formData, {
                     headers: {
@@ -197,7 +133,16 @@ function Detection() {
                     },
                   })
                   .then((res) => {
-                    console.log(res);
+                    const end = new Date().getTime();
+                    setLoadingTime(start - end);
+                    setResult({
+                      data: res.data.data,
+                      fake: res.data.fake,
+                      real: res.data.real,
+                    });
+                    if (res.data.fake + res.data.real > 0) {
+                      setRatio(res.data.fake / (res.data.fake + res.data.real));
+                    }
                   });
                 setLink(URL.createObjectURL(file));
               }}
@@ -205,7 +150,7 @@ function Detection() {
             <label htmlFor="file" id="label1">
               <div className="inputContainer">
                 <BiImageAdd className="imgAdd" />
-                <p className="addText">사진 혹은 비디오 추가</p>
+                <p className="addText">사진 혹은 비디오 선택</p>
               </div>
             </label>
           </>
@@ -220,6 +165,14 @@ function Detection() {
               ref={video}
               preload={"auto"}
               src={link}
+              onTimeUpdate={(e) => {
+                if (result.data.length > 0) {
+                  const cur = e.target as HTMLVideoElement;
+                  const curTime = cur.currentTime;
+                  const per = (result.data.length * cur.duration) / curTime;
+                  setVideoFrameState(result.data[Math.floor(per)]);
+                }
+              }}
             ></video>
 
             <div className="resultContainer">
@@ -227,12 +180,12 @@ function Detection() {
                 <>
                   <div className="chart">
                     <div>
-                      <PieChart accuracy={50} />
+                      <PieChart accuracy={ratio} />
                     </div>
-                    <p className="time">8초 소요됨</p>
+                    <p className="time">{loadingTime}ms 소요됨</p>
                   </div>
                   <p className="result">
-                    해당 영상은 50%확률로 딥페이크 입니다.
+                    해당 영상의 {ratio}%의 프레임이 딥페이크 입니다.
                   </p>
                 </>
               ) : (
@@ -241,8 +194,6 @@ function Detection() {
             </div>
           </>
         )}
-        <canvas ref={canvas} id="canvas1"></canvas>
-        <canvas ref={canvas1} id="canvas2"></canvas>
       </div>
     </DetectionCss>
   );

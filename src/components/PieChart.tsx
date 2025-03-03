@@ -14,8 +14,8 @@ export default function BasicPie({
       series={[
         {
           data: [
-            { id: 0, value: accuracy, label: "accuracy" },
-            { id: 1, value: accuracy, label: "inaccuracy" },
+            { id: 0, value: accuracy, label: "fake" },
+            { id: 1, value: accuracy, label: "real" },
           ],
         },
       ]}

@@ -1,9 +1,12 @@
 import styled from "styled-components";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
-import Detection from "./pages/Detection";
 import { FaChevronRight } from "react-icons/fa";
 import { useState } from "react";
 import { IoIosMenu } from "react-icons/io";
+import Detection from "./pages/Detection";
+import ImgProtection from "./pages/ImgProtection";
+import Home from "./pages/Home";
+import { PiDetectiveLight } from "react-icons/pi";
 type appType = {
   sidebar: boolean;
 };
@@ -12,17 +15,26 @@ const AppCss = styled.div<appType>`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 40px;
+    padding: 10px 200px;
     box-sizing: border-box;
     width: 100vw;
     min-height: 60px;
     background-color: #ffffff;
     position: fixed;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+    top: 0;
+    border-bottom: 1px solid #00000022;
     .logo {
       text-decoration: none;
       color: #090909;
       font-size: 26px;
+      display: flex;
+      align-items: center;
+      .logoIcon {
+        margin: 0;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+      }
     }
     .logo,
     .menuIcon {
@@ -30,7 +42,7 @@ const AppCss = styled.div<appType>`
       cursor: pointer;
     }
     .menuIcon {
-      font-size: 30px;
+      font-size: 35px;
     }
   }
   .reset {
@@ -110,14 +122,17 @@ function App() {
   const menu = [
     { name: "home", url: "/" },
     { name: "detection", url: "/detection" },
-    { name: "img proctection", url: "/proctection" },
+    { name: "img proctection", url: "/protection" },
   ];
   return (
     <BrowserRouter>
       <AppCss sidebar={sidebar}>
         <div className="header">
           <Link to={"/"} className="logo">
-            deepfake detection
+            <p className="logoIcon">
+              <PiDetectiveLight />
+            </p>
+            Antifake
           </Link>
           <p
             className="menuIcon"
@@ -130,9 +145,9 @@ function App() {
         </div>
         <div>
           <Routes>
-            <Route path="/" element={<></>} />
+            <Route path="/" element={<Home />} />
             <Route path="/detection" element={<Detection />} />
-            <Route path="/protection" element={<></>} />
+            <Route path="/protection" element={<ImgProtection />} />
           </Routes>
         </div>
         <div className="sidebar">
@@ -146,7 +161,14 @@ function App() {
           </p>
           {menu.map((e, idx) => {
             return (
-              <Link to={e.url} className="menu" key={idx}>
+              <Link
+                to={e.url}
+                className="menu"
+                key={idx}
+                onClick={() => {
+                  setSidebar(false);
+                }}
+              >
                 {e.name}
               </Link>
             );
