@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Route, Switch } from "react-router-dom";
 import { FaChevronRight } from "react-icons/fa";
 import { useState } from "react";
 import { IoIosMenu } from "react-icons/io";
@@ -144,11 +144,11 @@ function App() {
           </p>
         </div>
         <div>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/detection" element={<Detection />} />
-            <Route path="/protection" element={<ImgProtection />} />
-          </Routes>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/detection" component={Detection} />
+            <Route path="/protection" component={ImgProtection} />
+          </Switch>
         </div>
         <div className="sidebar">
           <p
