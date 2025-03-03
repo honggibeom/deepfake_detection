@@ -2411,7 +2411,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@^16.7.13":
+"@types/node@*", "@types/node@^16.18.126":
   version "16.18.126"
   resolved "https://registry.npmjs.org/@types/node/-/node-16.18.126.tgz"
   integrity sha512-OTcgaiwfGFBKacvfwuHzzn1KLxH/er8mluiy8/uM3sGXHaRe73RrSIj01jow9t4kJEW633Ov+cOexXeiApTyAw==
