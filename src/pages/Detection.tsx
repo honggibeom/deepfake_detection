@@ -5,6 +5,7 @@ import { BiImageAdd } from "react-icons/bi";
 import PieChart from "../components/PieChart";
 import { IoMdHome } from "react-icons/io";
 import loading from "../asset/loading.svg";
+import { Link } from "react-router-dom";
 const DetectionCss = styled.div`
   width: 100vw;
   .main {
@@ -61,7 +62,7 @@ const DetectionCss = styled.div`
   }
   .resultContainer {
     width: 100%;
-    margin: 50px 0 100px 0;
+    margin: 50px 0 50px 0;
     padding: 50px 100px;
     background: #ffffff;
     box-sizing: border-box;
@@ -70,7 +71,7 @@ const DetectionCss = styled.div`
     text-align: center;
     .chart {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
 
       .time {
@@ -86,11 +87,29 @@ const DetectionCss = styled.div`
       font-weight: 500;
     }
   }
-
-  #canvas1,
-  #canvas2 {
-    display: none;
+  .home {
+    width: 100%;
     background: #ffffff;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 500;
+    padding: 20px 0;
+    border-radius: 12px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    margin-top: 0;
+    cursor: pointer;
+  }
+  .home:hover {
+    background: #2e96ff;
+    color: #ffffff;
+  }
+  .home:hover {
+    background: #2e96ff;
+    color: #ffffff;
+  }
+  .link {
+    text-decoration: none;
+    color: #000000;
   }
 `;
 
@@ -123,25 +142,36 @@ function Detection() {
               accept="image/*,video/*"
               onChange={(e) => {
                 const file = (e.target.files as FileList)[0];
+                if (file.size > 10 * 1024 * 1024) {
+                  alert("업로드 가능한 최대 용량은 10MB입니다. ");
+                  return;
+                }
                 const formData = new FormData();
                 formData.append("file", file);
                 const start = new Date().getTime();
                 axios
-                  .post("http://localhost:5000/identification", formData, {
-                    headers: {
-                      "Content-Type": "multipart/form-data",
-                    },
-                  })
+                  .post(
+                    process.env.REACT_APP_ORIGIN + "/identification",
+                    formData,
+                    {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                      },
+                    }
+                  )
                   .then((res) => {
                     const end = new Date().getTime();
-                    setLoadingTime(start - end);
+                    console.log(res);
+                    setLoadingTime(end - start);
                     setResult({
                       data: res.data.data,
                       fake: res.data.fake,
                       real: res.data.real,
                     });
                     if (res.data.fake + res.data.real > 0) {
-                      setRatio(res.data.fake / (res.data.fake + res.data.real));
+                      setRatio(
+                        (res.data.fake / (res.data.fake + res.data.real)) * 100
+                      );
                     }
                   });
                 setLink(URL.createObjectURL(file));
@@ -174,24 +204,32 @@ function Detection() {
                 }
               }}
             ></video>
-
             <div className="resultContainer">
               {loadingTime > 0 ? (
                 <>
                   <div className="chart">
                     <div>
-                      <PieChart accuracy={ratio} />
+                      <PieChart accuracy={100} />
                     </div>
-                    <p className="time">{loadingTime}ms 소요됨</p>
+                    {/* <p className="time">{loadingTime}ms 소요됨</p> */}
                   </div>
-                  <p className="result">
-                    해당 영상의 {ratio}%의 프레임이 딥페이크 입니다.
-                  </p>
+                  <p className="result">영상의 {ratio}%가 딥페이크 입니다.</p>
                 </>
               ) : (
                 <img src={loading} />
               )}
             </div>
+            <p
+              className="home"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              재시도
+            </p>
+            <Link to="/" className="link">
+              <p className="home">홈으로</p>
+            </Link>
           </>
         )}
       </div>

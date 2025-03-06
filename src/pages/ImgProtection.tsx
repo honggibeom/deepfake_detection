@@ -2,6 +2,8 @@ import { useState } from "react";
 import styled from "styled-components";
 import loading from "../asset/loading.svg";
 import { BiImageAdd } from "react-icons/bi";
+import axios from "axios";
+import { Link } from "react-router-dom";
 const ImgProtectionCss = styled.div`
   .main {
     overflow: auto;
@@ -53,11 +55,58 @@ const ImgProtectionCss = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #ffffff;
+    padding: 50px 50px 10px 50px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+  }
+  .imgContainer {
+    img {
+      width: 24vw;
+      height: 24vw;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .imgState {
+      width: 100%;
+      text-align: center;
+      font-size: 24px;
+      background: #ffffff;
+      margin-top: 15px;
+      font-weight: 700;
+      color: #00000099;
+    }
+  }
+  .home {
+    width: 100%;
+    background: #ffffff;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 500;
+    padding: 20px 0;
+    border-radius: 12px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    margin-top: 50px;
+    cursor: pointer;
+  }
+
+  .home:hover {
+    background: #2e96ff;
+    color: #ffffff;
+  }
+  .link {
+    text-decoration: none;
+    color: #000000;
   }
 `;
 function ImgProtection() {
   const [link, setLink] = useState<string>("#");
   const [newImglink, setnewImgLink] = useState<string>("#");
+  function base64toFile(base_data: string) {
+    const buf = atob(base_data.replace(/\s/g, ""));
+    return new Blob([buf], { type: "image/jpeg" });
+  }
   return (
     <ImgProtectionCss>
       <div className="main">
@@ -72,11 +121,30 @@ function ImgProtection() {
             <input
               type="file"
               id="file"
-              accept="image/*,video/*"
+              accept="image/*"
               onChange={(e) => {
                 const file = (e.target.files as FileList)[0];
+                if (file.size > 10 * 1024 * 1024) {
+                  alert("업로드 가능한 최대 용량은 10MB입니다. ");
+                  return;
+                }
                 const formData = new FormData();
                 formData.append("file", file);
+                axios
+                  .post(process.env.REACT_APP_ORIGIN + "/noise", formData, {
+                    headers: {
+                      "Content-Type": "multipart/form-data",
+                      responseType: "arraybuffer",
+                    },
+                  })
+                  .then((res) => {
+                    setnewImgLink(res.data);
+                    const link = document.createElement("a");
+                    link.href = res.data;
+                    link.download = "noise.jpg";
+                    link.click();
+                    axios.get("http://localhost:5000/delete");
+                  });
                 setLink(URL.createObjectURL(file));
               }}
             />
@@ -88,20 +156,33 @@ function ImgProtection() {
             </label>
           </>
         ) : (
-          <div className="imgArea">
-            <div className="imgContainer">
-              <img src={link} className="img" />
-              <p className="text">before</p>
+          <>
+            <div className="imgArea">
+              <div className="imgContainer">
+                <img src={link} className="img" />
+                <p className="imgState">before</p>
+              </div>
+              <div className="imgContainer">
+                {newImglink === "#" ? (
+                  <img src={loading} />
+                ) : (
+                  <img src={newImglink} className="img" />
+                )}
+                <p className="imgState">after</p>
+              </div>
             </div>
-            <div className="imgContainer">
-              {newImglink === "#" ? (
-                <img src={loading} />
-              ) : (
-                <img src={newImglink} className="img" />
-              )}
-              <p className="text">after</p>
-            </div>
-          </div>
+            <p
+              className="home"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              재시도
+            </p>
+            <Link to="/" className="link">
+              <p className="home">홈으로</p>
+            </Link>
+          </>
         )}
       </div>
     </ImgProtectionCss>
