@@ -3,7 +3,6 @@ import axios from "axios";
 import styled from "styled-components";
 import { BiImageAdd } from "react-icons/bi";
 import PieChart from "../components/PieChart";
-import { IoMdHome } from "react-icons/io";
 import loading from "../asset/loading.svg";
 import { Link } from "react-router-dom";
 const DetectionCss = styled.div`
@@ -92,11 +91,12 @@ const DetectionCss = styled.div`
     background: #ffffff;
     text-align: center;
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 700;
     padding: 20px 0;
     border-radius: 12px;
     box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
     margin-top: 0;
+    color: #00000099;
     cursor: pointer;
   }
   .home:hover {
@@ -209,11 +209,16 @@ function Detection() {
                 <>
                   <div className="chart">
                     <div>
-                      <PieChart accuracy={100} />
+                      <PieChart accuracy={ratio * 100} />
                     </div>
                     {/* <p className="time">{loadingTime}ms 소요됨</p> */}
                   </div>
-                  <p className="result">영상의 {ratio}%가 딥페이크 입니다.</p>
+                  {ratio === 0 && (
+                    <p className="result">해당 영상은 딥페이크가 아닙니다.</p>
+                  )}
+                  {ratio > 0 && (
+                    <p className="result">영상의 {ratio}%가 딥페이크 입니다.</p>
+                  )}
                 </>
               ) : (
                 <img src={loading} />

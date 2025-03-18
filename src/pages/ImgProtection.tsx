@@ -83,11 +83,12 @@ const ImgProtectionCss = styled.div`
     background: #ffffff;
     text-align: center;
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 700;
     padding: 20px 0;
     border-radius: 12px;
     box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
     margin-top: 50px;
+    color: #00000099;
     cursor: pointer;
   }
 
@@ -99,14 +100,16 @@ const ImgProtectionCss = styled.div`
     text-decoration: none;
     color: #000000;
   }
+
+  .warn {
+    text-align: center;
+    font-size: 12px;
+    color: #db4455;
+  }
 `;
 function ImgProtection() {
   const [link, setLink] = useState<string>("#");
   const [newImglink, setnewImgLink] = useState<string>("#");
-  function base64toFile(base_data: string) {
-    const buf = atob(base_data.replace(/\s/g, ""));
-    return new Blob([buf], { type: "image/jpeg" });
-  }
   return (
     <ImgProtectionCss>
       <div className="main">
@@ -115,6 +118,7 @@ function ImgProtection() {
           <p className="explain">
             이미지에 노이즈를 추가해 딥페이크를 방지합니다
           </p>
+          <p className="warn">*10분이상 걸릴수 있음</p>
         </div>
         {link === "#" ? (
           <>
@@ -134,7 +138,6 @@ function ImgProtection() {
                   .post(process.env.REACT_APP_ORIGIN + "/noise", formData, {
                     headers: {
                       "Content-Type": "multipart/form-data",
-                      responseType: "arraybuffer",
                     },
                   })
                   .then((res) => {
@@ -143,7 +146,6 @@ function ImgProtection() {
                     link.href = res.data;
                     link.download = "noise.jpg";
                     link.click();
-                    axios.get("http://localhost:5000/delete");
                   });
                 setLink(URL.createObjectURL(file));
               }}
@@ -166,7 +168,14 @@ function ImgProtection() {
                 {newImglink === "#" ? (
                   <img src={loading} />
                 ) : (
-                  <img src={newImglink} className="img" />
+                  <img
+                    src={newImglink}
+                    className="img"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = newImglink;
+                    }}
+                  />
                 )}
                 <p className="imgState">after</p>
               </div>

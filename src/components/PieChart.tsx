@@ -15,7 +15,7 @@ export default function BasicPie({
         {
           data: [
             { id: 0, value: accuracy, label: "fake" },
-            { id: 1, value: accuracy, label: "real" },
+            { id: 1, value: 100 - accuracy, label: "real" },
           ],
         },
       ]}
